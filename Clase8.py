@@ -1156,7 +1156,7 @@ def zoom():
     canvas.bind("<B1-Motion>", on_drag)
     canvas.bind("<ButtonRelease-1>", on_release)
     # --- Vista previa ---
-    # Confirmar recorte
+    # Confirmar zoom
     def confirmar():
         global imagen_actual
         nonlocal start_x, start_y, end_x, end_y

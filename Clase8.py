@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import Libimg
 
@@ -93,7 +95,9 @@ def menu_editar(event=None):
                 ("Extraer RGB", extraer_capas_rgb),
                 ("Contraste Log", ajustar_contraste_log),
                 ("Contraste Exp", ajustar_contraste_exp),
-                ("Rotar", rotar_imagen)
+                ("Rotar", rotar_imagen),
+                ("Histograma", histograma),
+                ("Negativa", negativa)
                 ]
 
 
@@ -657,12 +661,79 @@ def extraer_capas_rgb():
     # Mostrar vista inicial
     vista_previa()
 
+def histograma():
+    # Muestra el histograma de la imagen actual.
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de mostrar el histograma.")
+        return
+    # Crear ventana
+    ventana_hist = tk.Toplevel(root)
+    ventana_hist.title("Histograma de la imagen")
+    ventana_hist.geometry("600x500")
+    ventana_hist.resizable(False, False)
+    ventana_hist.configure(bg="#f5f5f5")
+    img_np = np.array(imagen_actual, dtype=np.float32) / 255.0  # Normalizar a 0-1
+    # Obtener histogramas por canal
+    h_r=Libimg.historiagrama(img_np, 0)
+    h_g=Libimg.historiagrama(img_np, 1)
+    h_b=Libimg.historiagrama(img_np, 2)
+    # Crear figura con subplots
+    fig, axs = plt.subplots(2, 2, figsize=(6, 5))
+    axs[0, 0].plot(h_r, color='red')
+    axs[0, 0].set_title('Histograma Rojo')
+    axs[0, 1].plot(h_g, color='green')
+    axs[0, 1].set_title('Histograma Verde')
+    axs[1, 0].plot(h_b, color='blue')
+    axs[1, 0].set_title('Histograma Azul')
+    axs[1, 1].axis('off')  # Cuadro vacío
+    plt.tight_layout()
+    # Integrar figura en Tkinter
+    canvas = FigureCanvasTkAgg(fig, master=ventana_hist)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill="both", expand=True)
+    plt.close(fig)  # Cerrar figura para liberar memoria
+def negativa():
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de aplicar negativa.")
+        return
+    ventana_neg = tk.Toplevel(root)
+    ventana_neg.title("Negativa de la imagen")
+    ventana_neg.geometry("300x100")
+    ventana_neg.resizable(False, False)
+    ventana_neg.configure(bg="#f5f5f5")
+    tk.Label(
+        ventana_neg,
+        text="Aplicar negativa a la imagen actual?",
+        bg="#f5f5f5",
+        font=("Arial", 10)
+    ).pack(pady=10)
+    def vista_previa():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_modificada = Libimg.Resta(img_np)
+        img_pil = Image.fromarray(np.clip(img_modificada, 0, 255).astype(np.uint8))
+        mostrar_imagen(img_pil)
+    def confirmar():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_modificada = Libimg.Resta(img_np)
+        imagen_actual = Image.fromarray(np.clip(img_modificada, 0, 255).astype(np.uint8))
+        mostrar_imagen(imagen_actual)
+        ventana_neg.destroy()
+    def cancelar():
+        mostrar_imagen(imagen_actual)
+        ventana_neg.destroy()
 
+    # Botones de confirmación
+    frame_bot = tk.Frame(ventana_neg, bg="#f5f5f5")
+    frame_bot.pack(pady=12)
+    tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
+    tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
 
-
-
-
-
+    # Mostrar vista inicial
+    vista_previa()
 
 
 # ----------- INTERFAZ PRINCIPAL -----------
@@ -678,6 +749,9 @@ btn_archivo.place(x=10, y=10)
 
 btn_editar = tk.Button(root, text="Editar ▼", command=menu_editar)
 btn_editar.place(x=90, y=10)
+
+btn_salir = tk.Button(root, text="Salir", command=root.quit)
+btn_salir.place(x=540, y=10)
 
 # Label donde se muestra la imagen
 lbl = tk.Label(root, bg="white", relief="sunken", width=400, height=300)

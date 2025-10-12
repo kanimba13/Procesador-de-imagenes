@@ -38,7 +38,7 @@ def layer_prog(img, r, g, b):
     return combined
 
 def Resta(img):
-    imgN=1-img
+    imgN=255-img
     return imgN
 
 def Suma(img1,img2):
@@ -124,17 +124,9 @@ def binarizar(img, umbral):
     imgBin=gris>umbral
     return imgBin
 
-def trasladar():
-    img=plt.imread('img1.jpg')/255
-    plt.figure("TRASLACION sin np.roll")
-    plt.subplot(1,2,1)
-    plt.title("Original")
-    plt.imshow(img)
-    plt.axis("off")
-    plt.subplot(1,2,2)
-    plt.title("Trasladada")
+def trasladar(img, dx, dy):
+    img=img/255
     trasladada=np.zeros_like(img)
-    dx, dy=100, 50
     h, w=img.shape[:2]
     x_origen_inicio=0
     x_origen_fin=w-dx
@@ -142,12 +134,10 @@ def trasladar():
     y_origen_fin=h-dy
 
     trasladada[dy:h, dx:w]=img[y_origen_inicio:y_origen_fin, x_origen_inicio:x_origen_fin]
-    plt.imshow(trasladada)
-    plt.axis("off")
-    plt.show()
-    
-def recortar():
-    img=plt.imread('img1.jpg')/255
+    return trasladada
+
+def recortar(img):
+    img=img/255
     plt.figure("RECORTE")
     plt.subplot(1,2,1)
     plt.title("Original\nTamaño original: "+str(img.shape))
@@ -226,13 +216,13 @@ def historiagrama(img, tipo):
     b=img[:,:,2]
     match tipo:
         case 0:
-            h_r=plt.hist(r.ravel(), bins=256, color='red', alpha=0.7)
+            h_r,_=np.histogram(r, bins=256, range=(0,255))
             return h_r
         case 1:
-            h_g=plt.hist(g.ravel(), bins=256, color='green', alpha=0.7)
+            h_g,_=np.histogram(g, bins=256, range=(0,255))
             return h_g
         case 2:
-            h_b=plt.hist(b.ravel(), bins=256, color='blue', alpha=0.7)
+            h_b,_=np.histogram(b, bins=256, range=(0,255))
             return h_b
         case _:
             return img

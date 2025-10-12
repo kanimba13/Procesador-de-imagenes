@@ -42,26 +42,20 @@ def Resta(img):
     return imgN
 
 def Suma(img1,img2):
-    if img1.size!=img2.size:
-        img2=img2.resize(img1.size)
-        img2=np.array(img2)/255
-        img1=np.array(img1)/255
-    else:
-        img1=np.array(img1)/255
-        img2=np.array(img2)/255
+    if img1.max()>1:
+        img1=img1/255
+    if img2.max()>1:
+        img2=img2/255
     imgF=(img1+img2)/2
-    return imgF
+    return imgF.astype(np.float32)
 
 def Suma_ponderada(img1,img2,factor):
-    if img1.size!=img2.size:
-        img2=img2.resize(img1.size)
-        img2=np.array(img2)/255
-        img1=np.array(img1)/255
-    else:
-        img1=np.array(img1)/255
-        img2=np.array(img2)/255
+    if img1.max()>1:
+        img1=img1/255
+    if img2.max()>1:
+        img2=img2/255
     imgF=img1*factor+img2*(1-factor)
-    return imgF
+    return imgF.astype(np.float32)
 
 def grises(img):
     imgG=(img[:,:,0]+img[:,:,1]+img[:,:,2])/3
@@ -120,9 +114,11 @@ def contrastelog(img, contraste):
     return img_contraste
 
 def binarizar(img, umbral):
-    gris=(img[:,:,0]+img[:,:,1]+img[:,:,2])/3
+    if img.max()>1:
+        img=img/255.0
+    gris=(img[:,:,0]+img[:,:,1]+img[:,:,2])/3.0
     imgBin=gris>umbral
-    return imgBin
+    return imgBin.astype(np.float32)
 
 def trasladar(img, dx, dy):
     img=img/255
@@ -136,21 +132,13 @@ def trasladar(img, dx, dy):
     trasladada[dy:h, dx:w]=img[y_origen_inicio:y_origen_fin, x_origen_inicio:x_origen_fin]
     return trasladada
 
-def recortar(img):
-    img=img/255
-    plt.figure("RECORTE")
-    plt.subplot(1,2,1)
-    plt.title("Original\nTamaño original: "+str(img.shape))
-    plt.imshow(img)
-    plt.axis("off")
-    plt.subplot(1,2,2)
-    xi, xf=50,200
-    yi, yf=100,300
-    img_recortada=img[yi:yf, xi:xf]
-    plt.title("Recortada\nTamaño recortada: "+str(img_recortada.shape))
-    plt.imshow(img_recortada)
-    plt.axis("off")
-    plt.show()
+def recortar(img, x1, y1, x2, y2):
+    if img.max() > 1:
+        img = img / 255.0
+    y1, y2 = max(0, int(y1)), min(img.shape[0], int(y2))
+    x1, x2 = max(0, int(x1)), min(img.shape[1], int(x2))
+    img_recortada = img[y1:y2, x1:x2]
+    return img_recortada
     
 def rotar(img, angulo):
     """Rota una imagen en grados positivos o negativos."""
@@ -184,29 +172,33 @@ def resolucion(img, zoom_factor):
     img_baja=img[::zoom_factor, ::zoom_factor]
     return img_baja
 
-def ampliacion_area():
-    img=plt.imread('img1.jpg')/255
-    zoom_area=100
-    h,w=img.shape[:2]
-    star_row=h//2-zoom_area//2
-    end_row=h//2+zoom_area//2
-    star_col=w//2-zoom_area//2
-    end_col=w//2+zoom_area//2
+def ampliacion_area(img, zoom_factor, x1, y1, x2, y2):
+    # Normalizar si está en rango 0-255
+    if img.max() > 1:
+        img = img / 255.0
 
-    recorte=img[star_row:end_row, star_col:end_col]
-    zoom_factor=5
-    zoomed=np.kron(recorte, np.ones((zoom_factor, zoom_factor, 1)))
+    # Asegurar límites válidos
+    h, w = img.shape[:2]
+    x1, x2 = max(0, int(x1)), min(w, int(x2))
+    y1, y2 = max(0, int(y1)), min(h, int(y2))
 
-    plt.figure("AMPLIACION DE AREA")
-    plt.subplot(1,2,1)
-    plt.title("Original")
-    plt.imshow(img)
-    plt.axis("off")
-    plt.subplot(1,2,2)
-    plt.title("Ampliada")
-    plt.imshow(zoomed)
-    plt.axis("off")
-    plt.show()
+    # Recortar el área seleccionada
+    recorte = img[y1:y2, x1:x2]
+    if recorte.size == 0:
+        raise ValueError("Área seleccionada vacía o fuera de los límites de la imagen.")
+
+    # Ampliar usando Kronecker (zoom sin interpolación)
+    zoom_factor = max(1, int(zoom_factor))
+    if recorte.ndim == 2:
+        recorte = np.expand_dims(recorte, axis=-1)
+    zoomed = np.kron(recorte, np.ones((zoom_factor, zoom_factor, 1)))
+
+    # Escalar de nuevo a 0-255
+    zoomed = np.clip(zoomed * 255, 0, 255).astype(np.uint8)
+    zoomed=resolucion(zoomed, zoom_factor//2) if zoom_factor>2 else zoomed
+    if zoomed.shape[2] == 1:
+        zoomed = zoomed.squeeze(-1)
+    return zoomed
     
 def historiagrama(img, tipo):
     if img.max()<=1:

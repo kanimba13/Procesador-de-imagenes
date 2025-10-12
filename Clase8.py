@@ -97,7 +97,13 @@ def menu_editar(event=None):
                 ("Contraste Exp", ajustar_contraste_exp),
                 ("Rotar", rotar_imagen),
                 ("Histograma", histograma),
-                ("Negativa", negativa)
+                ("Negativa", negativa),
+                ("Escala de grises", grises),
+                ("Binarizar", Binarizacion),
+                ("Fusion dos imagenes", fusionar),
+                ("Fusion ecualizada", fusionar_ecualizada),
+                ("Recortar", recortar),
+                ("Zoom", zoom)
                 ]
 
 
@@ -734,6 +740,460 @@ def negativa():
 
     # Mostrar vista inicial
     vista_previa()
+def grises():
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de convertir a grises.")
+        return
+    ventana_gris = tk.Toplevel(root)
+    ventana_gris.title("Convertir a escala de grises")
+    ventana_gris.geometry("340x180")  # Aumenta el tamaño de la ventana
+    ventana_gris.resizable(False, False)
+    ventana_gris.configure(bg="#f5f5f5")
+    tk.Label(
+        ventana_gris,
+        text="Convertir la imagen actual a escala de grises?",
+        bg="#f5f5f5",
+        font=("Arial", 10)
+    ).pack(pady=10)
+    value_tipo = tk.IntVar()  # 1=promedio, 2=luminocidad, 3=tonalidad
+    def que_tipo(tipo):
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        match tipo:
+            case 1:
+                img_gris = Libimg.grises(img_np)
+                return img_gris
+            case 2:
+                img_gris = Libimg.luminocidad(img_np)
+                return img_gris
+            case 3:
+                img_gris = Libimg.tonalidad(img_np)
+                return img_gris
+            case _:
+                return img_np
+    def vista_previa():
+        img_modificada = que_tipo(value_tipo.get())
+        img_pil = Image.fromarray(np.clip(img_modificada, 0, 255).astype(np.uint8)).convert("RGB")
+        mostrar_imagen(img_pil)
+    def confirmar():
+        global imagen_actual
+        img_modificada = que_tipo(value_tipo.get())
+        imagen_actual = Image.fromarray(np.clip(img_modificada, 0, 255).astype(np.uint8)).convert("RGB")
+        mostrar_imagen(imagen_actual)
+        ventana_gris.destroy()
+    def cancelar():
+        mostrar_imagen(imagen_actual)
+        ventana_gris.destroy()
+    frame_escala = tk.Frame(ventana_gris, bg="#f5f5f5")
+    frame_escala.pack(pady=6)
+    tk.Button(frame_escala, text="Promedio", width=10, command=lambda: [value_tipo.set(1), vista_previa()]).pack(side="left", padx=6)
+    tk.Button(frame_escala, text="Luminocidad", width=10, command=lambda: [value_tipo.set(2), vista_previa()]).pack(side="left", padx=6)
+    tk.Button(frame_escala, text="Tonalidad", width=10, command=lambda: [value_tipo.set(3), vista_previa()]).pack(side="left", padx=6)
+
+    # Botones de confirmación
+    frame_bot = tk.Frame(ventana_gris, bg="#f5f5f5")
+    frame_bot.pack(pady=10, side="bottom")
+    tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
+    tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
+
+    # Mostrar vista inicial
+    vista_previa()
+def Binarizacion():
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de binarizar.")
+        return
+    # Crear ventana de binarización
+    ventana_bin = tk.Toplevel(root)
+    ventana_bin.title("Binarización de la imagen")
+    ventana_bin.geometry("300x100")
+    ventana_bin.resizable(False, False)
+    ventana_bin.configure(bg="#f5f5f5")
+    # Etiqueta de confirmación
+    tk.Label(
+        ventana_bin,
+        text="Aplicar binarización a la imagen actual?",
+        bg="#f5f5f5",
+        font=("Arial", 10)
+    ).pack(pady=2)
+    # Slider para umbral
+    value_umbral = tk.DoubleVar(value=0.5)  # Umbral inicial
+    slider = tk.Scale(
+        ventana_bin,
+        variable=value_umbral,
+        from_=0.0,
+        to=1.0,
+        resolution=0.01,
+        orient="horizontal",
+        bg="#f5f5f5",
+        command=lambda v: vista_previa()
+    )
+    slider.pack(pady=3)
+    # vista previa
+    def vista_previa():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_modificada = Libimg.binarizar(img_np, value_umbral.get())
+        img_pil = Image.fromarray(np.clip(img_modificada*255, 0, 255).astype(np.uint8))
+        mostrar_imagen(img_pil)
+    # confirmar y cancelar
+    def confirmar():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_modificada = Libimg.binarizar(img_np, value_umbral.get())
+        imagen_actual = Image.fromarray(np.clip(img_modificada*255, 0, 255).astype(np.uint8))
+        mostrar_imagen(imagen_actual)
+        ventana_bin.destroy()
+    def cancelar():
+        mostrar_imagen(imagen_actual)
+        ventana_bin.destroy()
+
+    # Botones de confirmación
+    frame_bot = tk.Frame(ventana_bin, bg="#f5f5f5")
+    frame_bot.pack(pady=5)
+    tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
+    tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
+
+    # Mostrar vista inicial
+    vista_previa()
+
+def fusionar():
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de fusionar.")
+        return
+    # Seleccionar segunda imagen
+    ruta_segunda = filedialog.askopenfilename(
+        title="Selecciona la segunda imagen para fusionar",
+        filetypes=[("Archivos de imagen", "*.png;*.jpg;*.jpeg;*.bmp;*.tiff"), ("Todos los archivos", "*.*")]
+    )
+    if not ruta_segunda:
+        return  # El usuario canceló
+
+    try:
+        segunda_imagen = Image.open(ruta_segunda).convert("RGB")
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo abrir la imagen:\n{e}")
+        return
+    # Redimensionar segunda imagen si es necesario
+    if imagen_actual.size != segunda_imagen.size:
+        segunda_imagen = segunda_imagen.resize(imagen_actual.size)
+    # Crear ventana de fusión
+    ventana_fusion = tk.Toplevel(root)
+    ventana_fusion.title("Fusión de imágenes")
+    ventana_fusion.geometry("320x180")
+    ventana_fusion.resizable(False, False)
+    ventana_fusion.configure(bg="#f5f5f5")
+
+    tk.Label(
+        ventana_fusion,
+        text="Fusionar la imagen actual con la segunda?",
+        bg="#f5f5f5",
+        font=("Arial", 10)
+    ).pack(pady=10)
+    def vista_previa():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_np2 = np.array(segunda_imagen, dtype=np.float32)
+        img_modificada = Libimg.Suma(img_np, img_np2)
+        img_pil = Image.fromarray(np.clip(img_modificada*255, 0, 255).astype(np.uint8))
+        mostrar_imagen(img_pil)
+    # confirmar y cancelar
+    def confirmar():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_np2 = np.array(segunda_imagen, dtype=np.float32)
+        img_modificada = Libimg.Suma(img_np, img_np2)
+        imagen_actual = Image.fromarray(np.clip(img_modificada*255, 0, 255).astype(np.uint8))
+        mostrar_imagen(imagen_actual)
+        ventana_fusion.destroy()
+    def cancelar():
+        mostrar_imagen(imagen_actual)
+        ventana_fusion.destroy()
+    # Botones de confirmación
+    frame_bot = tk.Frame(ventana_fusion, bg="#f5f5f5")
+    frame_bot.pack(pady=5)
+    tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
+    tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
+
+    # Mostrar vista inicial
+    vista_previa()
+def fusionar_ecualizada():
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de fusionar.")
+        return
+    # Seleccionar segunda imagen
+    ruta_segunda = filedialog.askopenfilename(
+        title="Selecciona la segunda imagen para fusionar",
+        filetypes=[("Archivos de imagen", "*.png;*.jpg;*.jpeg;*.bmp;*.tiff"), ("Todos los archivos", "*.*")]
+    )
+    if not ruta_segunda:
+        return  # El usuario canceló
+    # Abrir segunda imagen
+    try:
+        segunda_imagen = Image.open(ruta_segunda).convert("RGB")
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo abrir la imagen:\n{e}")
+        return
+    # Redimensionar segunda imagen si es necesario
+    if imagen_actual.size != segunda_imagen.size:
+        segunda_imagen = segunda_imagen.resize(imagen_actual.size)
+    # Crear ventana de fusión ecualizada
+    ventana_fusion = tk.Toplevel(root)
+    ventana_fusion.title("Fusión de imágenes")
+    ventana_fusion.geometry("300x100")
+    ventana_fusion.resizable(False, False)
+    ventana_fusion.configure(bg="#f5f5f5")
+    # Etiqueta de confirmación
+    tk.Label(
+        ventana_fusion,
+        text="Ajusta el ecualizador para fusionar:",
+        bg="#f5f5f5",
+        font=("Arial", 10)
+    ).pack(pady=2)
+    value_ecualizer = tk.DoubleVar(value=0.5) #ecualizador
+    # Slider para el ecualizador
+    slider = tk.Scale(
+        ventana_fusion,
+        variable=value_ecualizer,
+        from_=0.0,
+        to=1.0,
+        resolution=0.01,
+        orient="horizontal",
+        bg="#f5f5f5",
+        command=lambda v: vista_previa()
+    ).pack(pady=3)
+    # vista previa
+    def vista_previa():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_np2 = np.array(segunda_imagen, dtype=np.float32)
+        img_modificada = Libimg.Suma_ponderada(img_np, img_np2, value_ecualizer.get())
+        img_pil = Image.fromarray(np.clip(img_modificada*255, 0, 255).astype(np.uint8))
+        mostrar_imagen(img_pil)
+    # confirmar y cancelar
+    def confirmar():
+        global imagen_actual
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_np2 = np.array(segunda_imagen, dtype=np.float32)
+        img_modificada = Libimg.Suma_ponderada(img_np, img_np2, value_ecualizer.get())
+        imagen_actual = Image.fromarray(np.clip(img_modificada*255, 0, 255).astype(np.uint8))
+        mostrar_imagen(imagen_actual)
+        ventana_fusion.destroy()
+    def cancelar():
+        mostrar_imagen(imagen_actual)
+        ventana_fusion.destroy()
+    # Botones de confirmación
+    frame_bot = tk.Frame(ventana_fusion, bg="#f5f5f5")
+    frame_bot.pack(pady=5)
+    tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
+    tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
+
+    # Mostrar vista inicial
+    vista_previa()
+    
+def recortar():
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de recortar.")
+        return
+
+    # Crear ventana de recorte
+    ventana_recorte = tk.Toplevel(root)
+    ventana_recorte.title("Recortar imagen")
+    ventana_recorte.geometry("600x400")
+    ventana_recorte.resizable(False, False)
+    ventana_recorte.configure(bg="#f5f5f5")
+
+    tk.Label(
+        ventana_recorte,
+        text="Define el área a recortar",
+        bg="#f5f5f5",
+        font=("Arial", 10, "bold")
+    ).pack(pady=8)
+
+    # Imagen original para restaurar si se cancela
+    imagen_original = imagen_actual.copy()
+    
+    max_w, max_h = 700, 450
+    orig_w, orig_h = imagen_actual.size
+    scale = min(max_w / orig_w, max_h / orig_h, 1.0)  # No agrandar si es más pequeña
+
+    display_w = int(orig_w * scale)
+    display_h = int(orig_h * scale)
+    imagen_redimensionada = imagen_actual.resize((display_w, display_h), Image.LANCZOS)
+
+    img_tk = ImageTk.PhotoImage(imagen_redimensionada)
+
+    # Canvas para mostrar imagen
+    canvas = tk.Canvas(ventana_recorte, width=img_tk.width(), height=img_tk.height(), bg="gray")
+    canvas.pack(pady=10)
+    canvas.img_tk = img_tk  # Evita que el GC elimine la referencia
+    canvas.create_image(0, 0, image=img_tk, anchor="nw")
+    # Variables de coordenadas
+    start_x = start_y = end_x = end_y = 0
+    rect = None  # ID del rectángulo dibujado
+    # Eventos del mouse
+    def on_press(event):
+        nonlocal start_x, start_y, rect
+        start_x, start_y = event.x, event.y
+        if rect:
+            canvas.delete(rect)
+        rect = canvas.create_rectangle(start_x, start_y, start_x, start_y, outline="red", width=2)
+
+    def on_drag(event):
+        nonlocal rect
+        canvas.coords(rect, start_x, start_y, event.x, event.y)
+
+    def on_release(event):
+        nonlocal end_x, end_y
+        end_x, end_y = event.x, event.y
+
+    canvas.bind("<ButtonPress-1>", on_press)
+    canvas.bind("<B1-Motion>", on_drag)
+    canvas.bind("<ButtonRelease-1>", on_release)
+    # --- Vista previa ---
+    # Confirmar recorte
+    def confirmar():
+        global imagen_actual
+        nonlocal start_x, start_y, end_x, end_y
+        if rect is None:
+            messagebox.showwarning("Atención", "Selecciona un área antes de confirmar.")
+            return
+
+        # Asegurar límites correctos
+        x1, x2 = map(int, sorted([start_x, end_x]))
+        y1, y2 = map(int, sorted([start_y, end_y]))
+
+        if x2 - x1 < 5 or y2 - y1 < 5:
+            messagebox.showwarning("Error", "El área seleccionada es demasiado pequeña.")
+            return
+
+        # Recorte
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_modificada = Libimg.recortar(img_np, x1, y1, x2, y2)
+        if img_modificada.size == 0:
+            messagebox.showerror("Error", "El recorte está fuera de los límites de la imagen.")
+            return
+
+        img_pil = Image.fromarray(np.clip(img_modificada*255, 0, 255).astype(np.uint8))
+        mostrar_imagen(img_pil)
+        ventana_recorte.destroy()
+        # Actualiza la imagen global
+        imagen_actual = img_pil
+
+    def cancelar():
+        mostrar_imagen(imagen_original)
+        ventana_recorte.destroy()
+
+    # Botones de acción
+    frame_bot = tk.Frame(ventana_recorte, bg="#f5f5f5")
+    frame_bot.pack(pady=8)
+    tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
+    tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
+def zoom():
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de recortar.")
+        return
+
+    # Crear ventana de zoom
+    ventana_zoom = tk.Toplevel(root)
+    ventana_zoom.title("Zoom imagen")
+    ventana_zoom.geometry("600x600")
+    ventana_zoom.resizable(False, False)
+    ventana_zoom.configure(bg="#f5f5f5")
+
+    tk.Label(
+        ventana_zoom,
+        text="Define el área a ampliar:",
+        bg="#f5f5f5",
+        font=("Arial", 10, "bold")
+    ).pack(pady=2)
+    zoom_factor = tk.DoubleVar(value=2.0)  # Factor de zoom inicial
+    # Slider para el factor de zoom
+    slider = tk.Scale(
+        ventana_zoom,
+        variable=zoom_factor,
+        from_=1.1,
+        to=5.0,
+        resolution=0.1,
+        orient="horizontal",
+        bg="#f5f5f5",
+        font=("Arial", 10)
+    )
+    slider.pack(pady=5)
+    # Imagen original para restaurar si se cancela
+    imagen_original = imagen_actual.copy()
+    img_tk = ImageTk.PhotoImage(imagen_actual)
+    # Canvas para mostrar imagen
+    canvas = tk.Canvas(ventana_zoom, width=img_tk.width(), height=img_tk.height(), bg="gray")
+    canvas.pack(pady=10)
+    canvas.img_tk = img_tk  # Evita que el GC elimine la referencia
+    canvas.create_image(0, 0, image=img_tk, anchor="nw")
+    # Variables de coordenadas
+    start_x = start_y = end_x = end_y = 0
+    rect = None  # ID del rectángulo dibujado
+    # Eventos del mouse
+    def on_press(event):
+        nonlocal start_x, start_y, rect
+        start_x, start_y = event.x, event.y
+        if rect:
+            canvas.delete(rect)
+        rect = canvas.create_rectangle(start_x, start_y, start_x, start_y, outline="red", width=2)
+
+    def on_drag(event):
+        nonlocal rect
+        canvas.coords(rect, start_x, start_y, event.x, event.y)
+
+    def on_release(event):
+        nonlocal end_x, end_y
+        end_x, end_y = event.x, event.y
+
+    canvas.bind("<ButtonPress-1>", on_press)
+    canvas.bind("<B1-Motion>", on_drag)
+    canvas.bind("<ButtonRelease-1>", on_release)
+    # --- Vista previa ---
+    # Confirmar recorte
+    def confirmar():
+        global imagen_actual
+        nonlocal start_x, start_y, end_x, end_y
+        if rect is None:
+            messagebox.showwarning("Atención", "Selecciona un área antes de confirmar.")
+            return
+
+        # Asegurar límites correctos
+        x1, x2 = map(int, sorted([start_x, end_x]))
+        y1, y2 = map(int, sorted([start_y, end_y]))
+
+        if x2 - x1 < 5 or y2 - y1 < 5:
+            messagebox.showwarning("Error", "El área seleccionada es demasiado pequeña.")
+            return
+
+        # Zoom
+        img_np = np.array(imagen_actual, dtype=np.float32)
+        img_modificada = Libimg.ampliacion_area(img_np, zoom_factor.get(),x1, y1, x2, y2)
+        if img_modificada.size == 0:
+            messagebox.showerror("Error", "El zoom está fuera de los límites de la imagen.")
+            return
+
+        img_pil = Image.fromarray(img_modificada.astype(np.uint8))
+        mostrar_imagen(img_pil)
+        ventana_zoom.destroy()
+        # Actualiza la imagen global
+        imagen_actual = img_pil
+
+    def cancelar():
+        mostrar_imagen(imagen_original)
+        ventana_zoom.destroy()
+
+    # Botones de acción
+    frame_bot = tk.Frame(ventana_zoom, bg="#f5f5f5")
+    frame_bot.pack(pady=8)
+    tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
+    tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
 
 
 # ----------- INTERFAZ PRINCIPAL -----------

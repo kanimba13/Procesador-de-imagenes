@@ -24,36 +24,78 @@ La aplicación permite **abrir, visualizar, editar y guardar imágenes** mediant
 - **Abrir imagen:** permite cargar archivos `.png`, `.jpg`, `.jpeg`, `.bmp`, `.gif`, `.tiff`.  
 - **Guardar imagen:** exporta el resultado en múltiples formatos.  
 
+ <img src="imagenesreadme\opcionesarchivo.png" width="500">
 ---
 
 ### 🎨 Menú Editar
 Incluye una amplia variedad de herramientas visuales:
 
+<img src="imagenesreadme\opcionesEditar.png" width="500">
+
 #### 💡 Ajustes de Color y Brillo
 - **Brillo global:** control mediante barra deslizante (-1 a 1).
-- **Ajuste RGB:** control independiente por canal con sliders.  
-- **Extracción RGB:** permite apagar canales (R, G o B) con checkboxes.  
+
+<img src="imagenesreadme\brillo.png" width="500">
+
+- **Ajuste RGB:** control independiente por canal con sliders. 
+
+<img src="imagenesreadme\ajusteRGB.png" width="500">
+
+- **Extracción RGB:** permite apagar canales (R, G o B) con checkboxes.
+
+<img src="imagenesreadme\extraccionRGB.png" width="500">
+
 - **Extracción CMYK:** conversión a CMYK con opción de activar/desactivar canales.  
 
+<img src="imagenesreadme\extraccionCYMK.png" width="500">
+
 #### 🌓 Contraste
-- **Contraste logarítmico:** mejora áreas oscuras.  
+- **Contraste logarítmico:** mejora áreas oscuras.
+
+<img src="imagenesreadme\contrasteLOG.png" width="500">
+
 - **Contraste exponencial:** resalta zonas brillantes.  
+
+<img src="imagenesreadme\contrasteEXP.png" width="500">
 
 #### 🔄 Transformaciones Geométricas
 - **Rotar imagen:** ángulo entre -180° y 180°.  
-- **Recortar:** selección de área con el mouse directamente sobre la imagen.  
-- **Zoom:** ampliación por área seleccionada y factor configurable.  
+
+<img src="imagenesreadme\rotar.png" width="500">
+
+- **Recortar:** selección de área con el mouse directamente sobre la imagen.
+
+<img src="imagenesreadme\recortar.png" width="500">
+
+- **Zoom:** ampliación por área seleccionada y factor configurable.
+
+<img src="imagenesreadme\zoom.png" width="500">
 
 #### ⚫ Escala y Filtros
 - **Escala de grises:** por promedio, luminancia o tonalidad.  
-- **Negativo:** inversión de los valores de color.  
-- **Binarización:** umbral ajustable entre 0.0 y 1.0.  
+
+<img src="imagenesreadme\escalagrises.png" width="500">
+
+- **Negativo:** inversión de los valores de color.
+
+<img src="imagenesreadme\negativa.png" width="500">
+
+- **Binarización:** umbral ajustable entre 0.0 y 1.0.
+
+<img src="imagenesreadme\binarizar.png" width="500">
+
 - **Histograma:** muestra gráficos por canal (R, G, B).  
 
+<img src="imagenesreadme\histograma.png" width="500">
+
 #### 🔀 Operaciones entre imágenes
-- **Fusión:** mezcla dos imágenes del mismo tamaño.  
+- **Fusión:** mezcla dos imágenes del mismo tamaño.
+
+<img src="imagenesreadme\fusionarimg.png" width="500">
+
 - **Fusión ecualizada:** combina imágenes con un peso ajustable (slider).  
 
+<img src="imagenesreadme\ecualizarimg.png" width="500">
 ---
 
 ## 📘 Librería `Libimg`
@@ -98,4 +140,5 @@ La librería complementaria **`Libimg.py`** incluye todas las funciones de proce
 ├── Clase8.py          # Interfaz principal (Tkinter)
 ├── Libimg.py          # Librería personalizada de procesamiento
 ├── README.md          # (este archivo)
-└── /imagenes/         # Carpeta opcional para pruebas
+├── 📂 Imagenes de prueba/  # Carpeta opcional para pruebas
+└── 📂 Imagenesreadme/ # Carpeta de imagenes para el readme

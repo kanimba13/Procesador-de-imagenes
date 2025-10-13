@@ -218,3 +218,47 @@ def historiagrama(img, tipo):
             return h_b
         case _:
             return img
+        
+def separar_cmyk(img, c=True, m=True, y=True, k=True):
+    """
+    Convierte una imagen RGB a CMYK y permite desactivar canales.
+    Parámetros:
+        img : np.ndarray o PIL.Image
+            Imagen RGB de entrada (0-255).
+        c, m, y, k : bool
+            Indican si se mantiene (True) o elimina (False) cada canal.
+    Retorna:
+        np.ndarray : imagen resultante convertida a RGB (0-255)
+    """
+    # Convertir a numpy y normalizar
+    if isinstance(img, Image.Image):
+        img = np.array(img, dtype=np.float32)
+    if img.max() > 1:
+        img = img / 255.0
+
+    # Convertir RGB → CMY
+    C = 1 - img[..., 0]
+    M = 1 - img[..., 1]
+    Y = 1 - img[..., 2]
+
+    # Calcular componente K
+    K = np.minimum(np.minimum(C, M), Y)
+    C = (C - K) / (1 - K + 1e-8)
+    M = (M - K) / (1 - K + 1e-8)
+    Y = (Y - K) / (1 - K + 1e-8)
+
+    # Aplicar enmascaramiento según los checkboxes
+    if not c: C[:] = 0
+    if not m: M[:] = 0
+    if not y: Y[:] = 0
+    if not k: K[:] = 0
+
+    # Convertir de nuevo CMYK → RGB
+    R = (1 - C) * (1 - K)
+    G = (1 - M) * (1 - K)
+    B = (1 - Y) * (1 - K)
+
+    img_rgb = np.dstack((R, G, B))
+    img_rgb = np.clip(img_rgb * 255, 0, 255)
+
+    return img_rgb

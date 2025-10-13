@@ -93,6 +93,7 @@ def menu_editar(event=None):
                 ("Brillo", aplicar_brillo),
                 ("Ajuste RGB", ajustar_rgb),
                 ("Extraer RGB", extraer_capas_rgb),
+                ("Extraer CMYK", extraer_capas_cmyk),
                 ("Contraste Log", ajustar_contraste_log),
                 ("Contraste Exp", ajustar_contraste_exp),
                 ("Rotar", rotar_imagen),
@@ -699,6 +700,7 @@ def histograma():
     canvas.draw()
     canvas.get_tk_widget().pack(fill="both", expand=True)
     plt.close(fig)  # Cerrar figura para liberar memoria
+    
 def negativa():
     global imagen_actual
     if imagen_actual is None:
@@ -1155,6 +1157,7 @@ def zoom():
     canvas.bind("<ButtonPress-1>", on_press)
     canvas.bind("<B1-Motion>", on_drag)
     canvas.bind("<ButtonRelease-1>", on_release)
+    
     # --- Vista previa ---
     # Confirmar zoom
     def confirmar():
@@ -1194,6 +1197,81 @@ def zoom():
     frame_bot.pack(pady=8)
     tk.Button(frame_bot, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=6)
     tk.Button(frame_bot, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=6)
+
+def extraer_capas_cmyk():
+    """Permite activar/desactivar canales CMYK usando Libimg.separar_cmyk()."""
+    global imagen_actual
+    if imagen_actual is None:
+        messagebox.showinfo("Atención", "Primero abre una imagen antes de extraer canales CMYK.")
+        return
+
+    # Crear ventana
+    ventana_cmyk = tk.Toplevel(root)
+    ventana_cmyk.title("Separación de capas CMYK")
+    ventana_cmyk.geometry("320x280")
+    ventana_cmyk.resizable(False, False)
+    ventana_cmyk.configure(bg="#f5f5f5")
+
+    tk.Label(
+        ventana_cmyk,
+        text="Selecciona los canales a conservar:",
+        bg="#f5f5f5",
+        font=("Arial", 10, "bold")
+    ).pack(pady=10)
+
+    # Imagen base
+    imagen_original = imagen_actual.copy()
+    img_np = np.array(imagen_original, dtype=np.float32)
+
+    # Variables de checkboxes
+    var_c = tk.BooleanVar(value=True)
+    var_m = tk.BooleanVar(value=True)
+    var_y = tk.BooleanVar(value=True)
+    var_k = tk.BooleanVar(value=True)
+
+    frame_checks = tk.Frame(ventana_cmyk, bg="#f5f5f5")
+    frame_checks.pack(pady=10)
+
+    tk.Checkbutton(frame_checks, text="Cian (C)", variable=var_c, bg="#f5f5f5").pack(anchor="w")
+    tk.Checkbutton(frame_checks, text="Magenta (M)", variable=var_m, bg="#f5f5f5").pack(anchor="w")
+    tk.Checkbutton(frame_checks, text="Amarillo (Y)", variable=var_y, bg="#f5f5f5").pack(anchor="w")
+    tk.Checkbutton(frame_checks, text="Negro (K)", variable=var_k, bg="#f5f5f5").pack(anchor="w")
+
+    # Vista previa
+    def vista_previa(*_):
+        img_mod = Libimg.separar_cmyk(img_np, c=var_c.get(), m=var_m.get(), y=var_y.get(), k=var_k.get())
+        img_pil = Image.fromarray(np.clip(img_mod, 0, 255).astype(np.uint8))
+        mostrar_imagen(img_pil)
+
+    # Asociar cambios
+    var_c.trace_add("write", vista_previa)
+    var_m.trace_add("write", vista_previa)
+    var_y.trace_add("write", vista_previa)
+    var_k.trace_add("write", vista_previa)
+
+    # Confirmar
+    def confirmar():
+        global imagen_actual
+        img_mod = Libimg.separar_cmyk(img_np, c=var_c.get(), m=var_m.get(), y=var_y.get(), k=var_k.get())
+        imagen_actual = Image.fromarray(np.clip(img_mod, 0, 255).astype(np.uint8))
+        mostrar_imagen(imagen_actual)
+        ventana_cmyk.destroy()
+        messagebox.showinfo("Listo", "Capas CMYK actualizadas correctamente.")
+
+    # Cancelar
+    def cancelar():
+        mostrar_imagen(imagen_original)
+        ventana_cmyk.destroy()
+
+    # Botones
+    frame_botones = tk.Frame(ventana_cmyk, bg="#f5f5f5")
+    frame_botones.pack(pady=15)
+
+    tk.Button(frame_botones, text="Confirmar", width=10, command=confirmar).pack(side="left", padx=5)
+    tk.Button(frame_botones, text="Cancelar", width=10, command=cancelar).pack(side="left", padx=5)
+
+    vista_previa()
+
 
 
 # ----------- INTERFAZ PRINCIPAL -----------

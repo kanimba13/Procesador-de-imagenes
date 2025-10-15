@@ -52,11 +52,11 @@ Incluye una amplia variedad de herramientas visuales:
 #### 🌓 Contraste
 - **Contraste logarítmico:** mejora áreas oscuras.
 
-<img src="imagenesreadme\contrasteLOG.png" width="500">
+<img src="imagenesreadme\contrasteLog.png" width="500">
 
 - **Contraste exponencial:** resalta zonas brillantes.  
 
-<img src="imagenesreadme\contrasteEXP.png" width="500">
+<img src="imagenesreadme\contrasteExp.png" width="500">
 
 #### 🔄 Transformaciones Geométricas
 - **Rotar imagen:** ángulo entre -180° y 180°.  

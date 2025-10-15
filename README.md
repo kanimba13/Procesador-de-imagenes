@@ -30,7 +30,7 @@ La aplicación permite **abrir, visualizar, editar y guardar imágenes** mediant
 ### 🎨 Menú Editar
 Incluye una amplia variedad de herramientas visuales:
 
-<img src="imagenesreadme\opcionesEditar.png" width="500">
+<img src="imagenesreadme\opcioneseditar.png" width="500">
 
 #### 💡 Ajustes de Color y Brillo
 - **Brillo global:** control mediante barra deslizante (-1 a 1).
